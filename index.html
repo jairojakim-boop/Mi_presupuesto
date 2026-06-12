@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Mi Libro de Presupuesto</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1B4332">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Spectral:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap');
+
+  :root{
+    --paper: #FAF6EE;
+    --paper-line: #E2D9C7;
+    --ink: #2D2A26;
+    --ink-soft: #8A8378;
+    --green: #1B4332;
+    --green-soft: #DCEDE3;
+    --coral: #C1502E;
+    --coral-soft: #F6E2D9;
+    --gold: #C9A227;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+
+  body{
+    font-family:'Inter', sans-serif;
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 38px,
+        var(--paper-line) 39px
+      ),
+      var(--paper);
+    color:var(--ink);
+    min-height:100vh;
+    padding-bottom: 40px;
+  }
+
+  /* Top margin line like a ledger book */
+  body::before{
+    content:'';
+    position:fixed;
+    top:0; bottom:0; left:54px;
+    width:1px;
+    background:rgba(193,80,46,0.25);
+    z-index:0;
+  }
+
+  header{
+    position:relative;
+    z-index:1;
+    padding: 28px 20px 18px 70px;
+  }
+  header .eyebrow{
+    font-size:11px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    font-weight:600;
+  }
+  header h1{
+    font-family:'Spectral', serif;
+    font-weight:700;
+    font-size:28px;
+    margin-top:4px;
+    letter-spacing:.01em;
+  }
+  header .periodo{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin-top:2px;
+    font-family:'JetBrains Mono', monospace;
+  }
+
+  /* Balance stamp */
+  .balance-card{
+    position:relative;
+    z-index:1;
+    margin: 8px 16px 22px 70px;
+    border:1px solid var(--paper-line);
+    background: #FFFEFB;
+    border-radius:6px;
+    padding:20px 18px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+  }
+  .balance-card .label{
+    font-size:12px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    font-weight:600;
+    margin-bottom:6px;
+  }
+  .balance-card .amount{
+    font-family:'JetBrains Mono', monospace;
+    font-size:30px;
+    font-weight:700;
+  }
+  .amount.pos{ color:var(--green); }
+  .amount.neg{ color:var(--coral); }
+
+  .stamp{
+    font-family:'Spectral', serif;
+    font-weight:700;
+    font-size:12px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    border:2px solid currentColor;
+    border-radius:50%;
+    width:74px;
+    height:74px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    line-height:1.15;
+    transform:rotate(-9deg);
+    flex-shrink:0;
+    padding:6px;
+  }
+  .stamp.pos{ color:var(--green); }
+  .stamp.neg{ color:var(--coral); }
+
+  /* Totals row */
+  .totals{
+    position:relative; z-index:1;
+    display:flex;
+    gap:10px;
+    margin: 0 16px 26px 70px;
+  }
+  .totals .chip{
+    flex:1;
+    border:1px solid var(--paper-line);
+    border-radius:6px;
+    background:#FFFEFB;
+    padding:12px 14px;
+  }
+  .totals .chip .t-label{
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    font-weight:600;
+    margin-bottom:4px;
+  }
+  .totals .chip .t-amount{
+    font-family:'JetBrains Mono', monospace;
+    font-weight:700;
+    font-size:17px;
+  }
+  .chip.income .t-amount{ color:var(--green); }
+  .chip.expense .t-amount{ color:var(--coral); }
+
+  /* Section titles */
+  .section-title{
+    position:relative; z-index:1;
+    font-family:'Spectral', serif;
+    font-weight:600;
+    font-size:18px;
+    margin: 26px 16px 12px 70px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .section-title .num{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    color:var(--gold);
+    border:1px solid var(--gold);
+    border-radius:50%;
+    width:20px; height:20px;
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  /* Form */
+  form{
+    position:relative; z-index:1;
+    margin: 0 16px 8px 70px;
+    background:#FFFEFB;
+    border:1px solid var(--paper-line);
+    border-radius:6px;
+    padding:16px;
+  }
+
+  .toggle{
+    display:flex;
+    border:1px solid var(--paper-line);
+    border-radius:6px;
+    overflow:hidden;
+    margin-bottom:14px;
+  }
+  .toggle button{
+    flex:1;
+    padding:10px;
+    border:none;
+    background:#FFFEFB;
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition:.15s;
+  }
+  .toggle button.active.income{
+    background:var(--green-soft);
+    color:var(--green);
+  }
+  .toggle button.active.expense{
+    background:var(--coral-soft);
+    color:var(--coral);
+  }
+
+  .field{ margin-bottom:12px; }
+  .field label{
+    display:block;
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    font-weight:600;
+    margin-bottom:6px;
+  }
+  .field input, .field select{
+    width:100%;
+    padding:11px 12px;
+    border:1px solid var(--paper-line);
+    border-radius:5px;
+    font-family:'Inter', sans-serif;
+    font-size:15px;
+    background:var(--paper);
+    color:var(--ink);
+  }
+  .field input:focus, .field select:focus{
+    outline:2px solid var(--gold);
+    outline-offset:1px;
+  }
+  .row2{ display:flex; gap:10px; }
+  .row2 .field{ flex:1; }
+
+  .btn-add{
+    width:100%;
+    padding:13px;
+    border:none;
+    border-radius:5px;
+    font-family:'Spectral', serif;
+    font-weight:700;
+    font-size:16px;
+    letter-spacing:.04em;
+    cursor:pointer;
+    color:#FFFEFB;
+    margin-top:4px;
+  }
+  .btn-add.income{ background:var(--green); }
+  .btn-add.expense{ background:var(--coral); }
+
+  /* Ledger entries */
+  .ledger{
+    position:relative; z-index:1;
+    margin: 0 16px 0 70px;
+  }
+  .entry{
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+    padding:11px 4px;
+    border-bottom:1px dashed var(--paper-line);
+  }
+  .entry .date{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    width:54px;
+    flex-shrink:0;
+  }
+  .entry .desc{
+    flex:1;
+    min-width:0;
+  }
+  .entry .desc .title{
+    font-size:14px;
+    font-weight:500;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .entry .desc .cat{
+    font-size:11px;
+    color:var(--ink-soft);
+    margin-top:2px;
+  }
+  .entry .amount{
+    font-family:'JetBrains Mono', monospace;
+    font-weight:700;
+    font-size:14px;
+    flex-shrink:0;
+    text-align:right;
+  }
+  .entry .amount.income{ color:var(--green); }
+  .entry .amount.expense{ color:var(--coral); }
+  .entry .del{
+    background:none; border:none; color:var(--ink-soft);
+    font-size:16px; cursor:pointer; padding:0 0 0 6px; line-height:1;
+    flex-shrink:0;
+  }
+
+  .empty{
+    padding:30px 4px;
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:14px;
+    font-style:italic;
+    font-family:'Spectral', serif;
+  }
+
+  /* Category breakdown */
+  .breakdown{
+    position:relative; z-index:1;
+    margin: 0 16px 0 70px;
+    padding-bottom:10px;
+  }
+  .bar-row{ margin-bottom:12px; }
+  .bar-row .bar-label{
+    display:flex;
+    justify-content:space-between;
+    font-size:13px;
+    margin-bottom:5px;
+  }
+  .bar-row .bar-label .name{ font-weight:500; }
+  .bar-row .bar-label .val{
+    font-family:'JetBrains Mono', monospace;
+    color:var(--ink-soft);
+  }
+  .bar-track{
+    height:6px;
+    background:var(--paper-line);
+    border-radius:3px;
+    overflow:hidden;
+  }
+  .bar-fill{
+    height:100%;
+    background:var(--coral);
+    border-radius:3px;
+  }
+
+  footer{
+    text-align:center;
+    font-size:11px;
+    color:var(--ink-soft);
+    padding:30px 20px 10px;
+    font-family:'JetBrains Mono', monospace;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Libro de cuentas &middot; personal</div>
+  <h1>Mi Presupuesto</h1>
+  <div class="periodo" id="periodo"></div>
+</header>
+
+<div class="balance-card">
+  <div>
+    <div class="label">Saldo disponible</div>
+    <div class="amount" id="balance">$0</div>
+  </div>
+  <div class="stamp" id="stamp">OK</div>
+</div>
+
+<div class="totals">
+  <div class="chip income">
+    <div class="t-label">Ingresos</div>
+    <div class="t-amount" id="totalIncome">$0</div>
+  </div>
+  <div class="chip expense">
+    <div class="t-label">Gastos</div>
+    <div class="t-amount" id="totalExpense">$0</div>
+  </div>
+</div>
+
+<div class="section-title"><span class="num">1</span> Nuevo movimiento</div>
+<form id="form">
+  <div class="toggle">
+    <button type="button" id="btnIncome" class="active income">Ingreso</button>
+    <button type="button" id="btnExpense" class="expense">Gasto</button>
+  </div>
+
+  <div class="row2">
+    <div class="field">
+      <label for="amount">Monto (CLP)</label>
+      <input type="number" id="amount" placeholder="0" inputmode="numeric" min="0" required>
+    </div>
+    <div class="field">
+      <label for="date">Fecha</label>
+      <input type="date" id="date" required>
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="desc">Descripción</label>
+    <input type="text" id="desc" placeholder="Ej: Supermercado, Sueldo, Luz..." required>
+  </div>
+
+  <div class="field">
+    <label for="category">Categoría</label>
+    <select id="category"></select>
+  </div>
+
+  <button type="submit" class="btn-add income" id="btnSubmit">Agregar ingreso</button>
+</form>
+
+<div class="section-title"><span class="num">2</span> Movimientos recientes</div>
+<div class="ledger" id="ledger"></div>
+
+<div class="section-title"><span class="num">3</span> Gastos por categoría</div>
+<div class="breakdown" id="breakdown"></div>
+
+<footer>guardado automáticamente en este dispositivo</footer>
+
+<script>
+const CAT_INCOME = ['Sueldo','Freelance','Otros ingresos'];
+const CAT_EXPENSE = ['Alimentación','Transporte','Vivienda','Servicios','Salud','Entretenimiento','Educación','Otros gastos'];
+
+let mode = 'income';
+let transactions = [];
+
+const $ = id => document.getElementById(id);
+
+function fmt(n){
+  return '$' + Math.round(n).toLocaleString('es-CL');
+}
+
+function setMode(newMode){
+  mode = newMode;
+  $('btnIncome').classList.toggle('active', mode==='income');
+  $('btnExpense').classList.toggle('active', mode==='expense');
+  $('btnSubmit').className = 'btn-add ' + mode;
+  $('btnSubmit').textContent = mode==='income' ? 'Agregar ingreso' : 'Agregar gasto';
+  populateCategories();
+}
+
+function populateCategories(){
+  const sel = $('category');
+  sel.innerHTML = '';
+  const list = mode==='income' ? CAT_INCOME : CAT_EXPENSE;
+  list.forEach(c=>{
+    const opt = document.createElement('option');
+    opt.value = c; opt.textContent = c;
+    sel.appendChild(opt);
+  });
+}
+
+function setPeriodo(){
+  const now = new Date();
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  $('periodo').textContent = meses[now.getMonth()] + ' ' + now.getFullYear();
+  $('date').value = now.toISOString().slice(0,10);
+}
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem('presupuesto_transactions');
+    if(raw){
+      transactions = JSON.parse(raw);
+    }
+  }catch(e){
+    transactions = [];
+  }
+  render();
+}
+
+function saveData(){
+  try{
+    localStorage.setItem('presupuesto_transactions', JSON.stringify(transactions));
+  }catch(e){
+    console.error('No se pudo guardar', e);
+  }
+}
+
+function render(){
+  // Sort by date desc, then by id desc
+  const sorted = [...transactions].sort((a,b)=>{
+    if(a.date !== b.date) return b.date.localeCompare(a.date);
+    return b.id - a.id;
+  });
+
+  let income=0, expense=0;
+  transactions.forEach(t=>{
+    if(t.type==='income') income += t.amount;
+    else expense += t.amount;
+  });
+  const balance = income - expense;
+
+  $('totalIncome').textContent = fmt(income);
+  $('totalExpense').textContent = fmt(expense);
+  $('balance').textContent = fmt(balance);
+  $('balance').className = 'amount ' + (balance>=0 ? 'pos':'neg');
+
+  const stamp = $('stamp');
+  if(balance >= 0){
+    stamp.textContent = 'EN VERDE';
+    stamp.className = 'stamp pos';
+  } else {
+    stamp.textContent = 'EN ROJO';
+    stamp.className = 'stamp neg';
+  }
+
+  // Ledger
+  const ledger = $('ledger');
+  ledger.innerHTML = '';
+  if(sorted.length===0){
+    ledger.innerHTML = '<div class="empty">Aún no hay movimientos registrados.<br>Agrega el primero arriba.</div>';
+  } else {
+    sorted.forEach(t=>{
+      const div = document.createElement('div');
+      div.className = 'entry';
+      const d = new Date(t.date+'T00:00:00');
+      const dateStr = d.toLocaleDateString('es-CL',{day:'2-digit',month:'short'}).replace('.','');
+      div.innerHTML = `
+        <div class="date">${dateStr}</div>
+        <div class="desc">
+          <div class="title">${escapeHtml(t.desc)}</div>
+          <div class="cat">${escapeHtml(t.category)}</div>
+        </div>
+        <div class="amount ${t.type}">${t.type==='income'?'+':'−'}${fmt(t.amount)}</div>
+        <button class="del" data-id="${t.id}" title="Eliminar">✕</button>
+      `;
+      ledger.appendChild(div);
+    });
+  }
+
+  // Breakdown by category (expenses only)
+  const breakdown = $('breakdown');
+  breakdown.innerHTML = '';
+  const byCat = {};
+  transactions.filter(t=>t.type==='expense').forEach(t=>{
+    byCat[t.category] = (byCat[t.category]||0) + t.amount;
+  });
+  const entries = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  if(entries.length===0){
+    breakdown.innerHTML = '<div class="empty">Sin gastos registrados todavía.</div>';
+  } else {
+    const max = entries[0][1];
+    entries.forEach(([cat,val])=>{
+      const row = document.createElement('div');
+      row.className = 'bar-row';
+      row.innerHTML = `
+        <div class="bar-label"><span class="name">${escapeHtml(cat)}</span><span class="val">${fmt(val)}</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${(val/max*100).toFixed(1)}%"></div></div>
+      `;
+      breakdown.appendChild(row);
+    });
+  }
+
+  // Delete handlers
+  ledger.querySelectorAll('.del').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = Number(btn.dataset.id);
+      transactions = transactions.filter(t=>t.id!==id);
+      saveData();
+      render();
+    });
+  });
+}
+
+function escapeHtml(s){
+  const div = document.createElement('div');
+  div.textContent = s;
+  return div.innerHTML;
+}
+
+$('btnIncome').addEventListener('click', ()=>setMode('income'));
+$('btnExpense').addEventListener('click', ()=>setMode('expense'));
+
+$('form').addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const amount = parseFloat($('amount').value);
+  if(!amount || amount<=0) return;
+  const t = {
+    id: Date.now(),
+    type: mode,
+    amount: amount,
+    desc: $('desc').value.trim() || (mode==='income'?'Ingreso':'Gasto'),
+    category: $('category').value,
+    date: $('date').value
+  };
+  transactions.push(t);
+  saveData();
+  $('amount').value = '';
+  $('desc').value = '';
+  render();
+});
+
+setPeriodo();
+populateCategories();
+loadData();
+</script>
+
+</body>
+</html>
