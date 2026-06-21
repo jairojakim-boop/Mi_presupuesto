@@ -1,7 +1,6 @@
 <template>
   <ResumenSaldo :transacciones="transacciones" />
 
-  <RegistroVoz @guardado="$emit('guardado')" />
 
   <section class="seccion">
     <h2 class="titulo-seccion"><span class="numero">1</span> Nuevo movimiento</h2>
@@ -13,7 +12,6 @@
 
 <script setup>
 import ResumenSaldo from '../components/ResumenSaldo.vue'
-import RegistroVoz from '../components/RegistroVoz.vue'
 import RegistroRapido from '../components/RegistroRapido.vue'
 import ResumenMes from '../components/ResumenMes.vue'
 
